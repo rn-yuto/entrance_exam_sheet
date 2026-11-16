@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>2027入試カレンダー（スマホ対応・対策スケジュール付）</title>
+<style>
+  :root {
+    --bg: #f1f5f9;
+    --card: #ffffff;
+    --text: #0f172a;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --univ-w: 132px;
+    --day-w: 34px;
+
+    /* 公式イベント */
+    --app-bg: #dbeafe;
+    --app-border: #60a5fa;
+    --app-text: #1e40af;
+    --app-end-bg: #2563eb;
+    --app-end-text: #ffffff;
+
+    --exam-bg: #e11d48;
+    --exam-text: #ffffff;
+    --exam-tint: rgba(225, 29, 72, 0.05);
+
+    --alt-bg: #ffe4e6;
+    --alt-border: #fb7185;
+    --alt-text: #9f1239;
+
+    --res-bg: #10b981;
+    --res-text: #ffffff;
+
+    --pay-bg: #f59e0b;
+    --pay-text: #ffffff;
+    --pay2-bg: #fef3c7;
+    --pay2-border: #f59e0b;
+    --pay2-text: #92400e;
+
+    /* 対策スケジュール */
+    --prep-bg: #ccfbf1;
+    --prep-border: #2dd4bf;
+    --prep-text: #115e59;
+    --prep2-bg: #e0e7ff;
+    --prep2-border: #818cf8;
+    --prep2-text: #3730a3;
+  }
+
+  @media (min-width: 768px) {
+    :root {
+      --univ-w: 215px;
+      --day-w: 38px;
+    }
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Meiryo", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* ヘッダー */
+  header {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 12px 8px;
+  }
+
+  .top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 0.98rem;
+    font-weight: 800;
+    line-height: 1.25;
+  }
+
+  .today-pill {
+    font-size: 0.68rem;
+    color: #0369a1;
+    background: #e0f2fe;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  /* 対策ON/OFFトグルボタン */
+  .prep-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border: 1.5px solid #0d9488;
+    background: #0d9488;
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .prep-toggle.off {
+    background: #fff;
+    color: var(--muted);
+    border-color: #cbd5e1;
+  }
+
+  /* 横スクロール可能な操作チップ */
+  .scroll-bar {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin-top: 8px;
+    padding-bottom: 2px;
+  }
+  .scroll-bar::-webkit-scrollbar { display: none; }
+
+  .chip {
+    border: 1px solid var(--border);
+    background: #f8fafc;
+    color: var(--text);
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .chip.active {
+    background: #0f172a;
+    color: #fff;
+    border-color: #0f172a;
+  }
+  .chip-sep {
+    width: 1px;
+    background: #cbd5e1;
+    margin: 2px 2px;
+    flex-shrink: 0;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 10px;
+    margin-top: 7px;
+    font-size: 0.67rem;
+    color: #475569;
+  }
+  .legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: opacity 0.15s;
+  }
+  body.prep-hidden .prep-legend {
+    opacity: 0.3;
+  }
+  .sw {
+    width: 11px;
+    height: 11px;
+    border-radius: 3px;
+    display: inline-block;
+  }
+
+  /* カレンダー本体 */
+  .cal-wrap {
+    margin: 8px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    max-height: calc(100dvh - 175px);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+  }
+
+  table {
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: fixed;
+    width: max-content;
+  }
+
+  th, td {
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 0;
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  thead th {
+    position: sticky;
+    background: #f8fafc;
+    z-index: 4;
+  }
+  thead tr.month-row th {
+    top: 0;
+    height: 24px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    background: #f1f5f9;
+  }
+  thead tr.day-row th {
+    top: 24px;
+    height: 38px;
+    width: var(--day-w);
+    min-width: var(--day-w);
+    max-width: var(--day-w);
+    font-size: 0.68rem;
+    line-height: 1.2;
+  }
+
+  th.corner {
+    left: 0;
+    top: 0;
+    z-index: 6 !important;
+    width: var(--univ-w);
+    min-width: var(--univ-w);
+    max-width: var(--univ-w);
+    text-align: left;
+    padding: 0 8px;
+    font-size: 0.72rem;
+    background: #f1f5f9 !important;
+    border-right: 2px solid #cbd5e1;
+  }
+
+  td.univ-col {
+    position: sticky;
+    left: 0;
+    z-index: 3;
+    background: #fff;
+    width: var(--univ-w);
+    min-width: var(--univ-w);
+    max-width: var(--univ-w);
+    text-align: left;
+    padding: 5px 7px;
+    border-right: 2px solid #cbd5e1;
+  }
+
+  .u-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 3px;
+  }
+  .u-name {
+    font-size: 0.74rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: #0f172a;
+  }
+  .u-sub {
+    font-size: 0.62rem;
+    color: var(--muted);
+    margin-top: 2px;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .ek {
+    font-size: 0.56rem;
+    font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .ek-use { background: #ede9fe; color: #5b21b6; }
+  .ek-opt { background: #f3e8ff; color: #7e22ce; border: 1px dashed #c084fc; }
+  .ek-no  { display: none; }
+
+  @media (min-width: 768px) {
+    .u-name { font-size: 0.82rem; }
+    .u-sub { font-size: 0.69rem; }
+    .ek { font-size: 0.62rem; }
+    .ek-no { display: inline-block; background: #f1f5f9; color: #94a3b8; }
+  }
+
+  /* 日付列色 */
+  .sat { color: #2563eb; background: #eff6ff !important; }
+  .sun { color: #dc2626; background: #fef2f2 !important; }
+  .today-col-head {
+    background: #0284c7 !important;
+    color: #ffffff !important;
+  }
+  .exam-col {
+    background-image: linear-gradient(var(--exam-tint), var(--exam-tint));
+  }
+  .month-start { border-left: 2px solid #94a3b8; }
+
+  /* 行高さを固定（対策ON/OFFで不変） */
+  td.day-cell {
+    width: var(--day-w);
+    min-width: var(--day-w);
+    max-width: var(--day-w);
+    height: 48px;
+    position: relative;
+  }
+  td.day-cell.has-off,
+  td.day-cell.has-prep { cursor: pointer; }
+  body.prep-hidden td.day-cell.prep-only { cursor: default; }
+
+  td.day-cell.selected {
+    outline: 2px solid #0f172a;
+    outline-offset: -2px;
+    z-index: 2;
+  }
+
+  /* セル内2段トラック（上：公式日程 / 下：対策日程） */
+  .cell-stack {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    height: 100%;
+    padding: 2px 0;
+  }
+
+  .track-off {
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .track-prep {
+    height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* 非表示時は高さを保ったまま透明化 */
+  body.prep-hidden .track-prep {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  /* 公式イベントチップ */
+  .ev {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.61rem;
+    font-weight: 700;
+    line-height: 1;
+    width: 100%;
+  }
+  .ev-app {
+    background: var(--app-bg);
+    color: var(--app-text);
+    border-top: 1px solid var(--app-border);
+    border-bottom: 1px solid var(--app-border);
+    height: 15px;
+  }
+  .ev-app-s { border-left: 2px solid #2563eb; border-radius: 3px 0 0 3px; }
+  .ev-app-e {
+    background: var(--app-end-bg);
+    color: var(--app-end-text);
+    border: 1px solid #1d4ed8;
+    border-radius: 0 3px 3px 0;
+    height: 18px;
+  }
+  .ev-exam {
+    background: var(--exam-bg);
+    color: var(--exam-text);
+    width: 30px;
+    height: 22px;
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(225, 29, 72, 0.35);
+  }
+  .ev-alt {
+    background: var(--alt-bg);
+    color: var(--alt-text);
+    border: 1px dashed var(--alt-border);
+    width: 28px;
+    height: 19px;
+    border-radius: 4px;
+    font-size: 0.56rem;
+  }
+  .ev-res {
+    background: var(--res-bg);
+    color: var(--res-text);
+    width: 30px;
+    height: 20px;
+    border-radius: 4px;
+  }
+  .ev-pay {
+    background: var(--pay-bg);
+    color: var(--pay-text);
+    width: 30px;
+    height: 20px;
+    border-radius: 4px;
+  }
+  .ev-pay2 {
+    background: var(--pay2-bg);
+    color: var(--pay2-text);
+    border: 1px solid var(--pay2-border);
+    width: 30px;
+    height: 20px;
+    border-radius: 4px;
+  }
+
+  /* 対策イベントチップ */
+  .pv {
+    width: 100%;
+    height: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.54rem;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .pv-p1 {
+    background: var(--prep-bg);
+    color: var(--prep-text);
+    border-top: 1px solid var(--prep-border);
+    border-bottom: 1px solid var(--prep-border);
+  }
+  .pv-p2 {
+    background: var(--prep2-bg);
+    color: var(--prep2-text);
+    border-top: 1px solid var(--prep2-border);
+    border-bottom: 1px solid var(--prep2-border);
+  }
+  .pv-s { border-left: 2px solid currentColor; border-top-left-radius: 3px; border-bottom-left-radius: 3px; }
+  .pv-e { border-right: 2px solid currentColor; border-top-right-radius: 3px; border-bottom-right-radius: 3px; }
+
+  .hidden-ev { visibility: hidden !important; pointer-events: none; }
+
+  /* タップ詳細ボトムシート */
+  .sheet {
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    background: #0f172a;
+    color: #f8fafc;
+    border-radius: 12px;
+    padding: 12px 14px;
+    z-index: 30;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+    display: none;
+    font-size: 0.8rem;
+    line-height: 1.45;
+  }
+  .sheet.open { display: block; }
+  .sheet-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .sheet-title {
+    font-weight: 700;
+    font-size: 0.85rem;
+  }
+  .sheet-close {
+    background: #334155;
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    width: 24px;
+    height: 24px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .sheet-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    margin-top: 5px;
+  }
+  .s-badge {
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .hint-footer {
+    text-align: center;
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin: 4px 8px 10px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="top-row">
+    <div>
+      <h1>2027入試カレンダー</h1>
+      <span class="today-pill" id="todayBadge"></span>
+    </div>
+    <button class="prep-toggle" id="prepToggleBtn" onclick="togglePrep()">
+      <span>対策表示：ON</span>
+    </button>
+  </div>
+
+  <div class="scroll-bar" id="controlBar">
+    <button class="chip" onclick="jumpToToday()">今日へ</button>
+    <button class="chip" onclick="scrollToDate('2027-01-05')">1月出願</button>
+    <button class="chip" onclick="scrollToDate('2027-01-16')">共テ</button>
+    <button class="chip" onclick="scrollToDate('2027-02-01')">2月連戦</button>
+    <button class="chip" onclick="scrollToDate('2027-02-17')">慶應SFC</button>
+    <button class="chip" onclick="scrollToDate('2027-02-25')">国公立</button>
+    <div class="chip-sep"></div>
+    <button class="chip active" data-filter="all">すべて</button>
+    <button class="chip" data-filter="app">出願のみ</button>
+    <button class="chip" data-filter="exam">試験のみ</button>
+    <button class="chip" data-filter="res">発表・手続</button>
+  </div>
+
+  <div class="legend">
+    <span class="legend-item"><span class="sw" style="background:var(--app-bg);border:1px solid var(--app-border);"></span>出願</span>
+    <span class="legend-item"><span class="sw" style="background:var(--app-end-bg);"></span>〆切</span>
+    <span class="legend-item"><span class="sw" style="background:var(--exam-bg);"></span>試験</span>
+    <span class="legend-item"><span class="sw" style="background:var(--res-bg);"></span>発表</span>
+    <span class="legend-item"><span class="sw" style="background:var(--pay-bg);"></span>手続</span>
+    <span class="legend-item prep-legend"><span class="sw" style="background:var(--prep-bg);border:1px solid var(--prep-border);"></span>対策(前期)</span>
+    <span class="legend-item prep-legend"><span class="sw" style="background:var(--prep2-bg);border:1px solid var(--prep2-border);"></span>対策(直前)</span>
+  </div>
+</header>
+
+<div class="cal-wrap" id="calWrap">
+  <table>
+    <thead id="calHead"></thead>
+    <tbody id="calBody"></tbody>
+  </table>
+</div>
+
+<div class="hint-footer">色付きのマスをタップすると詳細（時間・必着・対策内容）が表示されます</div>
+
+<div class="sheet" id="detailSheet">
+  <div class="sheet-head">
+    <div class="sheet-title" id="sheetTitle"></div>
+    <button class="sheet-close" onclick="closeSheet()">×</button>
+  </div>
+  <div id="sheetBody"></div>
+</div>
+
+<script>
+const HOLIDAYS = {
+  '2026-11-23': '勤労感謝の日',
+  '2027-01-01': '元日',
+  '2027-01-11': '成人の日',
+  '2027-02-11': '建国記念の日',
+  '2027-02-23': '天皇誕生日',
+  '2027-03-21': '春分の日',
+  '2027-03-22': '振替休日'
+};
+const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
+
+function toIso(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+const now = new Date();
+const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+const TODAY_ISO = toIso(todayLocal);
+const FINAL_ISO = '2027-03-27';
+const START_ISO = TODAY_ISO <= FINAL_ISO ? TODAY_ISO : '2027-03-01';
+
+document.getElementById('todayBadge').textContent =
+  `本日 ${todayLocal.getMonth() + 1}/${todayLocal.getDate()}(${WEEKDAYS[todayLocal.getDay()]})〜表示中`;
+
+const SCHEDULE = [
+  {
+    name: '共通テスト',
+    sub: '本試験（1/16・17）',
+    ek: { label: '―', cls: 'ek-no' },
+    events: [
+      { type: 'exam', date: '2027-01-16', label: '1日', note: '本試験1日目（地歴公民・国語・英語）' },
+      { type: 'exam', date: '2027-01-17', label: '2日', note: '本試験2日目（理科・数学・情報Ⅰ）' },
+      { type: 'alt',  date: '2027-01-23', label: '追1', note: '追試験1日目' },
+      { type: 'alt',  date: '2027-01-24', label: '追2', note: '追試験2日目' }
+    ],
+    preps: [
+      { start: '2026-11-16', end: '2026-12-10', label: '基礎', phase: 1, note: '共テ基礎・弱点補強（数ⅠAⅡBC・理科基礎・情報Ⅰ・政経・古漢）' },
+      { start: '2026-12-11', end: '2027-01-15', label: '実戦', phase: 2, note: '共テ実戦パック・予想問題集（時間配分・マーク精度仕上げ）' },
+      { start: '2027-01-18', end: '2027-01-20', label: '判定', phase: 2, note: '自己採点・リサーチ判定確認 → 横国・横市・共テ利用の出願確定' }
+    ]
+  },
+  {
+    name: '日大 商・経営',
+    sub: 'N全学1期（併願0円）',
+    ek: { label: '英90', cls: 'ek-use' },
+    events: [
+      { type: 'app', start: '2027-01-05', end: '2027-01-22', note: '出願：1/5〜1/22必着（AN1期と同一学科同時出願で検定料0円）' },
+      { type: 'exam', date: '2027-02-01', label: '試験', note: '試験：2/1(月)｜英検CSE2352で英語90/100点換算可' },
+      { type: 'res',  date: '2027-02-15', label: '発表', note: '合格発表：2/15(月) 12:00' },
+      { type: 'pay',  date: '2027-02-22', label: '1次', note: '1次手続締切：2/22(月)' },
+      { type: 'pay2', date: '2027-03-11', label: '2次', note: '2次手続締切：3/11(木)' }
+    ],
+    preps: [
+      { start: '2026-11-24', end: '2026-12-05', label: '傾向', phase: 1, note: '国語(現古)・政経の過去問1〜2年分で出題傾向を把握' },
+      { start: '2027-01-21', end: '2027-01-31', label: '過去', phase: 2, note: 'N方式過去問3年分＋政経標準知識の総整理（英語は英検90点利用可）' }
+    ]
+  },
+  {
+    name: '成城 経済経営',
+    sub: '全学部S（英外必須）',
+    ek: { label: '英90%', cls: 'ek-use' },
+    events: [
+      { type: 'app', start: '2027-01-05', end: '2027-01-22', note: '出願：1/5〜1/22消印有効（Web個人番号＋証明書コピー郵送）' },
+      { type: 'exam', date: '2027-02-02', label: '試験', note: '試験：2/2(火) 13:00〜｜当日は国語のみ（英語は180/200点確定）' },
+      { type: 'res',  date: '2027-02-15', label: '発表', note: '合格発表（第1回）：2/15(月)' },
+      { type: 'pay',  date: '2027-02-24', label: '手続', note: '1次手続締切：2/24(水)' }
+    ],
+    preps: [
+      { start: '2026-12-01', end: '2026-12-10', label: '国語', phase: 1, note: '国語のみ対策：現古融合文・難度高めの漢字語彙を確認' },
+      { start: '2027-01-22', end: '2027-02-01', label: '過去', phase: 2, note: '成城国語 過去問70分演習（7割超で安全圏）' }
+    ]
+  },
+  {
+    name: '日大 商・経営',
+    sub: 'AN共通1期（2/3推奨）',
+    ek: { label: '英90', cls: 'ek-use' },
+    events: [
+      { type: 'app', start: '2027-01-05', end: '2027-01-22', note: '出願：1/5〜1/22必着' },
+      { type: 'exam', date: '2027-02-03', label: '試験', note: '試験：2/3(水)推奨（4日駒澤・5日明治との重複回避）' },
+      { type: 'alt',  date: '2027-02-04', label: '選', note: '選択可能日：2/4 ※駒澤と重複のため非推奨' },
+      { type: 'alt',  date: '2027-02-05', label: '選', note: '選択可能日：2/5 ※明治と重複のため非推奨' },
+      { type: 'res',  date: '2027-02-17', label: '発表', note: '合格発表：2/17(水) 12:00' },
+      { type: 'pay',  date: '2027-02-24', label: '1次', note: '1次手続締切：2/24(水)' },
+      { type: 'pay2', date: '2027-03-11', label: '2次', note: '2次手続締切：3/11(木)' }
+    ],
+    preps: [
+      { start: '2026-11-24', end: '2026-12-05', label: '基礎', phase: 1, note: 'N1期と共通：国語(現古)・政経の標準問題演習' },
+      { start: '2027-01-21', end: '2027-02-02', label: '過去', phase: 2, note: 'AN/A方式過去問演習＋2/1 N1期の手応え修正' }
+    ]
+  },
+  {
+    name: '駒澤 経営',
+    sub: '全学部統一日程',
+    ek: { label: '英75', cls: 'ek-use' },
+    events: [
+      { type: 'app', start: '2027-01-05', end: '2027-01-22', note: '出願：1/5〜1/22（ネット15時・消印有効）申請書＋証明書コピー郵送' },
+      { type: 'exam', date: '2027-02-04', label: '試験', note: '試験：2/4(木)｜英検75点保証（当日受験し高得点採用も可）' },
+      { type: 'res',  date: '2027-02-12', label: '発表', note: '合格発表：2/12(金)' },
+      { type: 'pay',  date: '2027-02-25', label: '手続', note: '1次手続締切：2/25(木)' }
+    ],
+    preps: [
+      { start: '2026-12-03', end: '2026-12-12', label: '基礎', phase: 1, note: '国語(現古)・政経・英語8割狙いの過去問確認' },
+      { start: '2027-01-23', end: '2027-02-03', label: '過去', phase: 2, note: '全学部過去問演習（素点判定のため取りこぼし防止）' }
+    ]
+  },
+  {
+    name: '明治 経営',
+    sub: '全学部 英語4技能',
+    ek: { label: '満点', cls: 'ek-use' },
+    events: [
+      { type: 'app', start: '2027-01-07', end: '2027-01-18', note: '出願：1/7〜1/18消印有効（デジタル証明書共有キー入力）' },
+      { type: 'exam', date: '2027-02-05', label: '試験', note: '試験：2/5(金)｜英語150点満点確定・当日は国語＋政経のみ' },
+      { type: 'res',  date: '2027-02-17', label: '発表', note: '合格発表：2/17(水) 9:30' },
+      { type: 'pay',  date: '2027-03-05', label: '手続', note: '手続締切：3/5(金)消印有効' }
+    ],
+    preps: [
+      { start: '2026-11-20', end: '2026-12-10', label: '国政', phase: 1, note: '英語満点確定のため国語60分・政経85%目標の実力養成' },
+      { start: '2027-01-19', end: '2027-02-04', label: '過去', phase: 2, note: '明治全学部・経営 過去問5〜7年分（高得点勝負仕上げ）' }
+    ]
+  },
+  {
+    name: '青学 社会情報',
+    sub: '個別A（共テ情報）',
+    ek: { label: '―', cls: 'ek-no' },
+    events: [
+      { type: 'app', start: '2027-01-06', end: '2027-01-22', note: '出願：Web〜1/20 23時 ／ 書類〜1/22必着' },
+      { type: 'exam', date: '2027-02-09', label: '試験', note: '試験：2/9(火) PM｜個別英語200点＋共テ(近代国100・情報Ⅰ100)' },
+      { type: 'res',  date: '2027-02-17', label: '発表', note: '合格発表：2/17(水)' },
+      { type: 'pay',  date: '2027-02-24', label: '1次', note: '1次・延納手続締切：2/24(水)' },
+      { type: 'pay2', date: '2027-03-16', label: '延納', note: '延納完了締切：3/16(火)' }
+    ],
+    preps: [
+      { start: '2026-11-22', end: '2026-12-13', label: '英語', phase: 1, note: '個別英語200点：正誤問題・文法語法・長文3題の速読強化' },
+      { start: '2027-01-20', end: '2027-02-08', label: '過去', phase: 2, note: '青学社情 個別英語90分過去問演習（2/6〜8直前仕上げ）' }
+    ]
+  },
+  {
+    name: '中央 国際情報',
+    sub: '共テ併用(外検併願可)',
+    ek: { label: '併願可', cls: 'ek-opt' },
+    events: [
+      { type: 'app', start: '2027-01-06', end: '2027-01-25', note: '出願：1/6〜1/25消印有効（外検利用方式も同時併願可）' },
+      { type: 'exam', date: '2027-02-11', label: '試験', note: '試験：2/11(木・祝)｜個別英語150＋共テ300（外検併願なら現代文）' },
+      { type: 'res',  date: '2027-02-22', label: '発表', note: '合格発表：2/22(月)' },
+      { type: 'pay',  date: '2027-03-02', label: '手続', note: '手続締切：3/2(火)' }
+    ],
+    preps: [
+      { start: '2026-11-25', end: '2026-12-15', label: '英語', phase: 1, note: '個別英語150点：長文・文法・和文英訳の記述対策' },
+      { start: '2027-01-22', end: '2027-02-10', label: '過去', phase: 2, note: '中央国情 英語過去問仕上げ（外検併願時は現代文60分も演習）' }
+    ]
+  },
+  {
+    name: '青学 マーケ',
+    sub: '個別A（総合問題）',
+    ek: { label: '―', cls: 'ek-no' },
+    events: [
+      { type: 'app', start: '2027-01-06', end: '2027-01-22', note: '出願：Web〜1/20 23時 ／ 書類〜1/22必着' },
+      { type: 'exam', date: '2027-02-15', label: '試験', note: '試験：2/15(月)｜新設「総合問題90分150点」＋共テ(国100英50政100)' },
+      { type: 'res',  date: '2027-02-24', label: '発表', note: '合格発表：2/24(水)' },
+      { type: 'pay',  date: '2027-03-03', label: '1次', note: '1次・延納手続締切：3/3(水)' },
+      { type: 'pay2', date: '2027-03-16', label: '延納', note: '延納完了締切：3/16(火)' }
+    ],
+    preps: [
+      { start: '2026-11-18', end: '2026-12-08', label: '総合', phase: 1, note: '新形式「総合問題」準備：企業・社会テーマの英語読解＋日本語要約' },
+      { start: '2027-01-25', end: '2027-02-14', label: '総合', phase: 2, note: '総合問題サンプル・青学経営系論述演習（2/10〜14直前集中）' }
+    ]
+  },
+  {
+    name: '慶應 総合政策',
+    sub: '一般（英/数＋小論）',
+    ek: { label: '―', cls: 'ek-no' },
+    events: [
+      { type: 'app', start: '2026-12-24', end: '2027-01-18', note: '出願：12/24 10時〜1/18 17時（書類1/18消印有効）' },
+      { type: 'exam', date: '2027-02-17', label: '試験', note: '試験：2/17(水)｜選択(英語等)120分200点＋小論文120分200点' },
+      { type: 'res',  date: '2027-02-25', label: '発表', note: '合格発表：2/25(木)' },
+      { type: 'pay',  date: '2027-03-04', label: '手続', note: '手続締切：3/4(木)' }
+    ],
+    preps: [
+      { start: '2026-11-16', end: '2026-12-20', label: '英小', phase: 1, note: 'SFC英語超長文の論理精読＋総合政策 小論文過去問・添削（週2本）' },
+      { start: '2027-01-19', end: '2027-02-16', label: '過去', phase: 2, note: '英語120分＋小論文120分 通し過去問演習（2/12〜16直前特化）' }
+    ]
+  },
+  {
+    name: '慶應 環境情報',
+    sub: '一般（英/数＋小論）',
+    ek: { label: '―', cls: 'ek-no' },
+    events: [
+      { type: 'app', start: '2026-12-24', end: '2027-01-18', note: '出願：12/24 10時〜1/18 17時（書類1/18消印有効）' },
+      { type: 'exam', date: '2027-02-18', label: '試験', note: '試験：2/18(木)｜選択(英語等)120分200点＋小論文120分200点' },
+      { type: 'res',  date: '2027-02-25', label: '発表', note: '合格発表：2/25(木)' },
+      { type: 'pay',  date: '2027-03-04', label: '手続', note: '手続締切：3/4(木)' }
+    ],
+    preps: [
+      { start: '2026-11-19', end: '2026-12-20', label: '小論', phase: 1, note: '環境情報 小論文（発想・資料構造化）過去問演習＋英語語彙強化' },
+      { start: '2027-01-20', end: '2027-02-17', label: '過去', phase: 2, note: '環境情報 過去問通し演習＆2/17夜の最終感覚調整' }
+    ]
+  },
+  {
+    name: '横国 経営',
+    sub: '前期（政経＋2次英）',
+    ek: { label: '―', cls: 'ek-no' },
+    events: [
+      { type: 'app', start: '2027-01-22', end: '2027-02-03', note: '出願：Web 1/22〜2/2 ／ 書類 1/25〜2/3必着' },
+      { type: 'exam', date: '2027-02-25', label: '試験', note: '試験：2/25(木)｜2次（英語90分：記述＋自由英作）｜共テ2:2次1' },
+      { type: 'res',  date: '2027-03-06', label: '発表', note: '合格発表：3/6(土)' },
+      { type: 'pay',  date: '2027-03-15', label: '手続', note: '手続締切：3/15(月)' }
+    ],
+    preps: [
+      { start: '2026-11-16', end: '2026-12-15', label: '2次', phase: 1, note: '横国2次英語（和文内容説明記述・自由英作）の基礎演習 ※共テと並行' },
+      { start: '2027-01-19', end: '2027-02-24', label: '2次', phase: 2, note: '横国2次英語 過去問徹底添削（2/19〜24直前集中仕上げ）' }
+    ]
+  },
+  {
+    name: '横市 DS',
+    sub: '後期（共テ＋面接）',
+    ek: { label: '―', cls: 'ek-no' },
+    events: [
+      { type: 'app', start: '2027-01-25', end: '2027-02-03', note: '出願：Web〜2/3 15時 ／ 書類 1/25〜2/3必着' },
+      { type: 'exam', date: '2027-03-12', label: '試験', note: '試験：3/12(金)｜2次は面接200点のみ（共テは政経＋もう1科目必須）' },
+      { type: 'res',  date: '2027-03-20', label: '発表', note: '合格発表：3/20(土)' },
+      { type: 'pay',  date: '2027-03-27', label: '手続', note: '手続締切：3/27(土)' }
+    ],
+    preps: [
+      { start: '2026-12-01', end: '2026-12-15', label: '面接', phase: 1, note: 'データサイエンス志望理由・興味ある社会課題の骨子メモ作成' },
+      { start: '2027-02-26', end: '2027-03-11', label: '面接', phase: 2, note: '横市DS 模擬面接・口頭試問対策（横国前期後に集中）' }
+    ]
+  }
+];
+
+function buildDateRange(startStr, endStr) {
+  const dates = [];
+  const [sy, sm, sd] = startStr.split('-').map(Number);
+  const [ey, em, ed] = endStr.split('-').map(Number);
+  const cur = new Date(sy, sm - 1, sd);
+  const end = new Date(ey, em - 1, ed);
+  while (cur <= end) {
+    const iso = toIso(cur);
+    dates.push({
+      iso,
+      y: cur.getFullYear(),
+      m: cur.getMonth() + 1,
+      d: cur.getDate(),
+      dow: cur.getDay(),
+      holiday: HOLIDAYS[iso] || null
+    });
+    cur.setDate(cur.getDate() + 1);
+  }
+  return dates;
+}
+
+const DATES = buildDateRange(START_ISO, FINAL_ISO);
+
+const EXAM_DATES = new Set();
+SCHEDULE.forEach(u => u.events.forEach(ev => {
+  if (ev.type === 'exam') EXAM_DATES.add(ev.date);
+}));
+
+function renderHeader() {
+  const thead = document.getElementById('calHead');
+  const monthRow = document.createElement('tr');
+  monthRow.className = 'month-row';
+
+  const corner = document.createElement('th');
+  corner.className = 'corner';
+  corner.rowSpan = 2;
+  corner.textContent = '大学・方式';
+  monthRow.appendChild(corner);
+
+  const months = [];
+  DATES.forEach(dt => {
+    const key = `${dt.y}/${dt.m}月`;
+    if (!months.length || months[months.length - 1].key !== key) {
+      months.push({ key, count: 1 });
+    } else {
+      months[months.length - 1].count++;
+    }
+  });
+  months.forEach((m, idx) => {
+    const th = document.createElement('th');
+    th.colSpan = m.count;
+    th.textContent = m.key;
+    if (idx > 0) th.classList.add('month-start');
+    monthRow.appendChild(th);
+  });
+
+  const dayRow = document.createElement('tr');
+  dayRow.className = 'day-row';
+  DATES.forEach((dt, idx) => {
+    const th = document.createElement('th');
+    th.dataset.date = dt.iso;
+    if (dt.d === 1 && idx > 0) th.classList.add('month-start');
+    if (dt.iso === TODAY_ISO) {
+      th.classList.add('today-col-head');
+      th.innerHTML = `<div>${dt.d}</div><div style="font-size:0.56rem;">今日</div>`;
+    } else {
+      if (dt.holiday || dt.dow === 0) th.classList.add('sun');
+      else if (dt.dow === 6) th.classList.add('sat');
+      th.innerHTML = `<div>${dt.d}</div><div>${WEEKDAYS[dt.dow]}</div>`;
+    }
+    if (EXAM_DATES.has(dt.iso)) th.classList.add('exam-col');
+    dayRow.appendChild(th);
+  });
+
+  thead.appendChild(monthRow);
+  thead.appendChild(dayRow);
+}
+
+let selectedCell = null;
+
+function renderBody() {
+  const tbody = document.getElementById('calBody');
+  SCHEDULE.forEach(univ => {
+    const tr = document.createElement('tr');
+
+    const tdUniv = document.createElement('td');
+    tdUniv.className = 'univ-col';
+    tdUniv.innerHTML = `
+      <div class="u-top">
+        <span class="u-name">${univ.name}</span>
+        <span class="ek ${univ.ek.cls}">${univ.ek.label}</span>
+      </div>
+      <div class="u-sub">${univ.sub}</div>
+    `;
+    tr.appendChild(tdUniv);
+
+    const offMap = {};
+    univ.events.forEach(ev => {
+      if (ev.type === 'app') {
+        DATES.forEach((dt, idx) => {
+          if (dt.iso >= ev.start && dt.iso <= ev.end) {
+            offMap[dt.iso] = {
+              kind: 'app',
+              isStart: dt.iso === ev.start,
+              isEnd: dt.iso === ev.end,
+              showLabel: dt.iso === ev.start || idx === 0,
+              note: ev.note
+            };
+          }
+        });
+      } else {
+        offMap[ev.date] = { kind: ev.type, label: ev.label, note: ev.note };
+      }
+    });
+
+    const prepMap = {};
+    (univ.preps || []).forEach(pr => {
+      DATES.forEach((dt, idx) => {
+        if (dt.iso >= pr.start && dt.iso <= pr.end) {
+          prepMap[dt.iso] = {
+            label: pr.label,
+            phase: pr.phase,
+            isStart: dt.iso === pr.start,
+            isEnd: dt.iso === pr.end,
+            showLabel: dt.iso === pr.start || idx === 0,
+            note: pr.note
+          };
+        }
+      });
+    });
+
+    DATES.forEach((dt, idx) => {
+      const td = document.createElement('td');
+      td.className = 'day-cell';
+      if (dt.d === 1 && idx > 0) td.classList.add('month-start');
+      if (dt.holiday || dt.dow === 0) td.classList.add('sun');
+      else if (dt.dow === 6) td.classList.add('sat');
+      if (EXAM_DATES.has(dt.iso)) td.classList.add('exam-col');
+
+      const off = offMap[dt.iso];
+      const prep = prepMap[dt.iso];
+
+      if (off || prep) {
+        if (off) td.classList.add('has-off');
+        if (prep) td.classList.add('has-prep');
+        if (!off && prep) td.classList.add('prep-only');
+
+        const stack = document.createElement('div');
+        stack.className = 'cell-stack';
+
+        const topTrack = document.createElement('div');
+        topTrack.className = 'track-off';
+        if (off) {
+          const el = document.createElement('div');
+          if (off.kind === 'app') {
+            el.className = 'ev ev-app' + (off.isStart ? ' ev-app-s' : '') + (off.isEnd ? ' ev-app-e' : '');
+            el.dataset.cat = 'app';
+            el.textContent = off.isEnd ? '〆' : (off.showLabel ? '出' : '');
+          } else if (off.kind === 'exam') {
+            el.className = 'ev ev-exam';
+            el.dataset.cat = 'exam';
+            el.textContent = off.label;
+          } else if (off.kind === 'alt') {
+            el.className = 'ev ev-alt';
+            el.dataset.cat = 'exam';
+            el.textContent = off.label;
+          } else if (off.kind === 'res') {
+            el.className = 'ev ev-res';
+            el.dataset.cat = 'res';
+            el.textContent = off.label;
+          } else if (off.kind === 'pay') {
+            el.className = 'ev ev-pay';
+            el.dataset.cat = 'res';
+            el.textContent = off.label;
+          } else if (off.kind === 'pay2') {
+            el.className = 'ev ev-pay2';
+            el.dataset.cat = 'res';
+            el.textContent = off.label;
+          }
+          topTrack.appendChild(el);
+        }
+
+        const botTrack = document.createElement('div');
+        botTrack.className = 'track-prep';
+        if (prep) {
+          const pEl = document.createElement('div');
+          pEl.className = `pv pv-p${prep.phase}` + (prep.isStart ? ' pv-s' : '') + (prep.isEnd ? ' pv-e' : '');
+          pEl.textContent = prep.showLabel ? prep.label : '';
+          botTrack.appendChild(pEl);
+        }
+
+        stack.appendChild(topTrack);
+        stack.appendChild(botTrack);
+        td.appendChild(stack);
+
+        td.addEventListener('click', () => {
+          if (!off && !prepVisible) return;
+          if (selectedCell) selectedCell.classList.remove('selected');
+          td.classList.add('selected');
+          selectedCell = td;
+          openSheet(univ, dt, off, prep);
+        });
+      }
+
+      tr.appendChild(td);
+    });
+
+    tbody.appendChild(tr);
+  });
+}
+
+let prepVisible = true;
+function togglePrep() {
+  prepVisible = !prepVisible;
+  document.body.classList.toggle('prep-hidden', !prepVisible);
+  const btn = document.getElementById('prepToggleBtn');
+  btn.classList.toggle('off', !prepVisible);
+  btn.innerHTML = `<span>対策表示：${prepVisible ? 'ON' : 'OFF'}</span>`;
+  if (!prepVisible && selectedCell && selectedCell.classList.contains('prep-only')) {
+    closeSheet();
+  }
+}
+
+function openSheet(univ, dt, off, prep) {
+  const sheet = document.getElementById('detailSheet');
+  const title = document.getElementById('sheetTitle');
+  const body = document.getElementById('sheetBody');
+
+  const hol = dt.holiday ? ` [${dt.holiday}]` : '';
+  title.textContent = `${univ.name}（${univ.sub}）｜ ${dt.m}/${dt.d}(${WEEKDAYS[dt.dow]})${hol}`;
+
+  const badgeMap = {
+    app:  { text: '出願', bg: '#2563eb' },
+    exam: { text: '試験', bg: '#e11d48' },
+    alt:  { text: '選択/追試', bg: '#be123c' },
+    res:  { text: '発表', bg: '#10b981' },
+    pay:  { text: '手続', bg: '#f59e0b' },
+    pay2: { text: '2次/延納', bg: '#d97706' }
+  };
+
+  let html = '';
+  if (off) {
+    const b = badgeMap[off.kind];
+    html += `<div class="sheet-row"><span class="s-badge" style="background:${b.bg};">${b.text}</span><span>${off.note}</span></div>`;
+  }
+  if (prep && prepVisible) {
+    const pBg = prep.phase === 1 ? '#0d9488' : '#4f46e5';
+    const pTxt = prep.phase === 1 ? '対策(前)' : '対策(直前)';
+    html += `<div class="sheet-row"><span class="s-badge" style="background:${pBg};">${pTxt}</span><span>${prep.note}</span></div>`;
+  }
+  if (!html) return;
+
+  body.innerHTML = html;
+  sheet.classList.add('open');
+}
+
+function closeSheet() {
+  document.getElementById('detailSheet').classList.remove('open');
+  if (selectedCell) {
+    selectedCell.classList.remove('selected');
+    selectedCell = null;
+  }
+}
+
+// 絞り込みボタン
+document.getElementById('controlBar').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-filter]');
+  if (!btn) return;
+  document.querySelectorAll('button[data-filter]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const f = btn.dataset.filter;
+  document.querySelectorAll('.ev').forEach(el => {
+    el.classList.toggle('hidden-ev', f !== 'all' && el.dataset.cat !== f);
+  });
+});
+
+function jumpToToday() {
+  document.getElementById('calWrap').scrollTo({ left: 0, behavior: 'smooth' });
+}
+
+function scrollToDate(iso) {
+  const targetIso = iso < START_ISO ? START_ISO : iso;
+  const th = document.querySelector(`thead tr.day-row th[data-date="${targetIso}"]`);
+  const wrap = document.getElementById('calWrap');
+  const univCol = document.querySelector('.corner');
+  if (!th || !wrap || !univCol) return;
+  wrap.scrollTo({
+    left: Math.max(0, th.offsetLeft - univCol.offsetWidth),
+    behavior: 'smooth'
+  });
+}
+
+renderHeader();
+renderBody();
+</script>
+</body>
+</html>
